@@ -970,11 +970,11 @@ drawbar(Monitor *m)
 	drawbevel(drw, x + b, y + b,
 		m->ww - tw - x - (b * 3),
 		h - (b * 2), b,
-		SchemeBR1, SchemeTL1);
+		SchemeTL1, SchemeBR1);
 	drawbevel(drw, x + (b * 2), y + (b * 2),
 		m->ww - tw - x - (b * 5),
 		h - (b * 4), b,
-		SchemeBR1, SchemeTL1);
+		SchemeTL1, SchemeBR1);
 	x += b * 3;
 	drw_setscheme(drw, scheme[SchemeItem]);
 	drw_rect(drw, x, y + (b * 3),
