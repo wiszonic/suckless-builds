@@ -59,7 +59,8 @@
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm, SchemeItem, SchemeSel, SchemeTL1, SchemeTL2, SchemeBR1, SchemeBR2 }; /* color schemes */
+enum { SchemeNorm, SchemeItem, SchemeSel, SchemeUrg,
+	SchemeTL1, SchemeTL2, SchemeTL3, SchemeBR1, SchemeBR2, SchemeBR3 }; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
@@ -832,16 +833,34 @@ drawstatusbar(Monitor *m, int bh, char* stext) {
 	return ret;
 }
 
-static void /* test static inline */
-drawbevel(Drw *drw, int x, int y, int w, int h, int b,
+static inline void
+drawbevel(Drw *drw, int type, int style,
+		int x, int y, int w, int h, int b,
 		int scmtl, int scmbr) 
 {
-	drw_setscheme(drw, scheme[scmtl]);
-	drw_rect(drw, x, y, w + b, b, 1, 1);		/* top */
-	drw_rect(drw, x, y + b, b, h - b, 1, 1);	/* left */
-	drw_setscheme(drw, scheme[scmbr]);
-	drw_rect(drw, x + b, y + h - b, w, b, 1, 1);	/* bottom */
-	drw_rect(drw, x + w, y + b, b, h - b, 1, 1);	/* right */
+	unsigned int i;
+
+	for (i = 0; i < type; i++) {
+		int xi = x + i * b;
+		int yi = y + i * b;
+		int wi = w - i * (b * 2);
+		int hi = h - i * (b * 2);
+
+                int tl = scmtl;
+                int br = scmbr;
+
+                if (style && i == 0) {
+                        tl = scmbr;
+                        br = scmtl;
+                }
+
+		drw_setscheme(drw, scheme[tl]);
+		drw_rect(drw, xi, yi, wi + b, b, 1, 1);			/* top */
+		drw_rect(drw, xi, yi + b, b, hi - b, 1, 1);		/* left */
+		drw_setscheme(drw, scheme[br]);
+		drw_rect(drw, xi + b, yi + hi - b, wi, b, 1, 1);       	/* bottom */
+		drw_rect(drw, xi + wi, yi + b, b, hi - (b * 2), 1, 1); 	/* right */
+	}
 }
 
 void
@@ -851,8 +870,16 @@ drawbar(Monitor *m)
 		y = tbpx, b = bevelpx,
 		og = outgappx, ig = ingappx,
 		tb = tbgappx, lr = lrgappx;
+
+	int xy = b * 3;
 	int h = bh - (y * 2);
-	int th = h - (b * 6) - (tb * 2);
+	int th = h - (xy * 2) - (tb * 2);
+	int ti = th + (tb * 2);
+	int yi = y + xy;
+	int yh = yi + tb;
+	int wi = (lr * 2) - ig;
+	int wh = xy + (b * 2);
+
 	unsigned int i, occ = 0, urg = 0;
 	Client *c;
 
@@ -878,20 +905,11 @@ drawbar(Monitor *m)
 	x = lrpx; w = 0;
 	for (i = 0; i < LENGTH(tags); i++) 
 		w += TEXTW(tags[i]) + ig;
-	w += lr;
-	drawbevel(drw, x, y,
-		w + lr - ig + (b * 5), h, b,
-		SchemeBR1, SchemeTL1); 
-	drawbevel(drw, x + b, y + b,
-		w + lr - ig + (b * 3), h - (b * 2), b,
-		SchemeTL1, SchemeBR1);
-	drawbevel(drw, x + (b * 2), y + (b * 2),
-		w + lr - ig + b, h - (b * 4), b,
-		SchemeTL1, SchemeBR1);
-	x += b * 3;
+	w += wi;
+	drawbevel(drw, 3, 1, x, y, w + wh, h, b, SchemeTL1, SchemeBR1); 
+	x += xy;
 	drw_setscheme(drw, scheme[SchemeItem]);
-	drw_rect(drw, x, y + (b * 3),
-		w + lr - ig, h - (b * 6), 1, 1);
+	drw_rect(drw, x, yi, w, ti, 1, 1);
 	x += lr;
 	for (i = 0; i < LENGTH(tags); i++) {
 		w = TEXTW(tags[i]);
@@ -902,84 +920,48 @@ drawbar(Monitor *m)
 			scmbg = SchemeSel;
 			scmtl = SchemeBR2;
 			scmbr = SchemeTL2;
+		} else if ( urg & urgtag << i) {
+			scmbg = SchemeUrg;
+			scmtl = SchemeTL3;
+			scmbr = SchemeBR3;
 		} else if (occ & 1 << i) {
 			scmbg = SchemeSel;
 			scmtl = SchemeTL2;
 			scmbr = SchemeBR2;
-		//} else if (urg & 1 << i) {	/* build urgent state support */
-		//	scmbg = SchemeItem;
-		//	scmtl = SchemeTL1;
-		//	scmbr = SchemeBR1;
 		}
 		drw_setscheme(drw, scheme[scmbg]);
-		drw_text(drw, x, y + tb + (b * 3),
-			w, th, lrpad / 2, tags[i], 0);	
-		drawbevel(drw, x, y + tb + (b * 3),
-			w - b, th, b,
-			scmtl, scmbr);	
-		drawbevel(drw, x + b, y + tb + (b * 4),
-			w - (b * 3), th - (b * 2), b,
-			scmtl, scmbr);
+		drw_text(drw, x, yh, w, th, lrpad / 2, tags[i], 0);	
+        	drawbevel(drw, 2, 0, x, yh, w - b, th, b, scmtl, scmbr);	
 		x += w + ig;
 	}
-	
-	x += lr - ig + (b * 3) + og;
-	w = TEXTW(indicator) + TEXTW(m->ltsymbol) + lr;
-	drawbevel(drw, x, y,
-		w + lr + (b * 3), h, b,
-		SchemeBR1, SchemeTL1); 
-	drawbevel(drw, x + b, y + b,
-		w + lr + b, h - (b * 2), b,
-		SchemeBR1, SchemeTL1);
-	drawbevel(drw, x + (b * 2), y + (b * 2),
-		w + lr - b, h - (b * 4), b,
-		SchemeBR1, SchemeTL1);
-	x += b * 3;
+
+	x += lr - ig + xy + og;
+	w = TEXTW(indicator) + TEXTW(m->ltsymbol) + (lr * 2) - (b * 2);
+	drawbevel(drw, 3, 0, x, y, w + wh, h, b, SchemeBR1, SchemeTL1); 
+	x += xy;
 	drw_setscheme(drw, scheme[SchemeItem]);
-	drw_rect(drw, x, y + (b * 3),
-		w + lr - (b * 2), h - (b * 6), 1, 1);
+	drw_rect(drw, x, yi, w, ti, 1, 1);
 	x += lr;
 	int sx = x;
 	w = TEXTW(indicator) - (b * 2);
-	x = drw_text(drw, x, y + tb + (b * 3),
-		w, th, lrpad / 2, indicator, 0);
+	x = drw_text(drw, x, yh, w, th, lrpad / 2, indicator, 0);
 	drw_setscheme(drw, scheme[SchemeBR1]);
-	drw_rect(drw, x, y + tb + (b * 3),
-		b, th, 1, 1),
+	drw_rect(drw, x, yh, b, th, 1, 1),
 	drw_setscheme(drw, scheme[SchemeTL1]);
-	drw_rect(drw, x + b, y + tb + (b * 3),
-		b, th, 1, 1),
+	drw_rect(drw, x + b, yh, b, th, 1, 1),
 	x += b * 2;
-	w = TEXTW(m->ltsymbol);
+	w = TEXTW(m->ltsymbol) - (b * 2);
 	drw_setscheme(drw, scheme[SchemeItem]);
-	x = drw_text(drw, x, y + tb + (b * 3),
-		w, th, lrpad / 2 - (b * 2), m->ltsymbol, 0);
-	w = TEXTW(indicator) + TEXTW(m->ltsymbol) - (b * 2);
-	drawbevel(drw, sx, y + tb + (b * 3),
-		w - b, th, b,
-		SchemeTL1, SchemeBR1);	
-	drawbevel(drw, sx + b, y + tb + (b * 4),
-		w - (b * 3), th - (b * 2), b,
-		SchemeTL1, SchemeBR1);
-	x += lr + b + og;
+	x = drw_text(drw, x, yh, w, th, lrpad / 2 - (b * 2), m->ltsymbol, 0);
+	w = TEXTW(indicator) + TEXTW(m->ltsymbol) - xy;
+	drawbevel(drw, 2, 0, sx, yh, w, th, b, SchemeTL1, SchemeBR1); 
 
-	drawbevel(drw, x, y,
-	      m->ww - tw - x - b,
-		h, b,
-		SchemeBR1, SchemeTL1); 
-	drawbevel(drw, x + b, y + b,
-		m->ww - tw - x - (b * 3),
-		h - (b * 2), b,
-		SchemeTL1, SchemeBR1);
-	drawbevel(drw, x + (b * 2), y + (b * 2),
-		m->ww - tw - x - (b * 5),
-		h - (b * 4), b,
-		SchemeTL1, SchemeBR1);
-	x += b * 3;
+	x += lr + xy + og;
+	drawbevel(drw, 3, 1, x, y, m->ww - tw - x - b, h, b, SchemeTL1, SchemeBR1);
+	x += xy;
 	drw_setscheme(drw, scheme[SchemeItem]);
-	drw_rect(drw, x, y + (b * 3),
-		m->ww - tw - x - (b * 3), h - (b * 6), 1, 1);
-	if ((w = m->ww - tw - x - (lr * 2) - (b * 3) + ig) > bh) {
+	drw_rect(drw, x, yi, m->ww - tw - x - xy, ti, 1, 1);
+	if ((w = m->ww - tw - x - (lr * 2) - xy + ig) > bh) {
 		if (n > 0) {
 			int remainder = w % n;
 			int tabw = (1.0 / (double)n) * w + 1;
@@ -993,6 +975,10 @@ drawbar(Monitor *m)
 					scmbg = SchemeSel;
 					scmtl = SchemeBR2;
 					scmbr = SchemeTL2;
+				} else if (c->isurgent && urgtitle) {
+					scmbg = SchemeUrg;
+					scmtl = SchemeBR3;
+					scmbr = SchemeTL3;
 				}
 				if (remainder >= 0) {
 					if (remainder == 0) {
@@ -1003,14 +989,8 @@ drawbar(Monitor *m)
 				int mid = (tabw - ig - (int)TEXTW(c->name)) / 2;
 				mid = mid >= lrpad / 2 ? mid : lrpad / 2;
 				drw_setscheme(drw, scheme[scmbg]);
-				drw_text(drw, x + lr, y + tb + (b * 3),
-					tabw - ig, th, mid, c->name, 0);
-				drawbevel(drw, x + lr, y + tb + (b * 3),
-					tabw - ig - b, th, b,
-					scmtl, scmbr);	
-				drawbevel(drw, x + lr + b, y + tb + (b * 4),
-					tabw - ig - (b * 3), th - (b * 2), b,
-					scmtl, scmbr);
+				drw_text(drw, x + lr, yh, tabw - ig, th, mid, c->name, 0);
+				drawbevel(drw, 2, 0, x + lr, yh, tabw - ig - b, th, b, scmtl, scmbr);	
         			i++;
 				x += tabw;
 			}
@@ -1018,14 +998,8 @@ drawbar(Monitor *m)
 			int mid = (w - ig - (int)TEXTW(notitle)) / 2;
 			mid = mid >= lrpad / 2 ? mid : lrpad / 2;
 			drw_setscheme(drw, scheme[SchemeItem]);
-			drw_text(drw, x + lr, y + tb + (b * 3),
-				w - ig, th, mid, notitle, 0);
-			drawbevel(drw, x + lr, y + tb + (b * 3),
-				w -ig - b, th, b,
-				SchemeBR1, SchemeTL1);	
-			drawbevel(drw, x + lr + b, y + tb + (b * 4),
-				w - ig - (b * 3), th - (b * 2), b,
-				SchemeBR1, SchemeTL1);
+			drw_text(drw, x + lr, yh, w - ig, th, mid, notitle, 0);
+			drawbevel(drw, 2, 0, x + lr, yh, w -ig - b, th, b, SchemeBR1, SchemeTL1);	
 		}
 	}
 	m->bt = n;

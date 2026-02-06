@@ -8,7 +8,7 @@ static const unsigned int heightpx  = 5;        /* bar height */
 static const unsigned int tbpx      = 4;	/* top/bottom bar border */
 static const unsigned int lrpx      = 4;	/* left/right bar border */
 static const unsigned int outgappx  = 4;	/* gap betwen outer items */
-static const unsigned int ingappx   = 2;	/* gap between inner items */
+static const unsigned int ingappx   = 1;	/* gap between inner items */
 static const unsigned int tbgappx   = 4;	/* top/bottom gap in items */
 static const unsigned int lrgappx   = 4;	/* left/right gap in items */
 static const unsigned int bevelpx   = 1;	/* bevel size */
@@ -24,24 +24,31 @@ static const char dmenufont[]       = "UbuntuNerdFont:size=10";
 static const char col_bg1[]       = "#222226";	/* bar */
 static const char col_bg2[]       = "#4b3f66";	/* base purple */
 static const char col_bg3[]	  = "#a86f46";	/* base yellow */ 
+static const char col_bg4[]       = "#a32b2f";  /* base red */
 static const char col_tl1[]	  = "#8c5dd9";	/* bright purple */
 static const char col_tl2[]       = "#f6c175";	/* bright yellow */
+static const char col_tl3[]	  = "#e82127";	/* bright red */
 static const char col_br1[]	  = "#3a3150";	/* dark purple */ 
 static const char col_br2[]	  = "#875534";	/* dark yellow */
+static const char col_br3[]       = "#6e1c1f";  /* dark red */
 static const char col_fg1[]       = "#eeeeee";	/* text */
 static const char *colors[][3]    = {
 	/*               fg         bg         border   */
-	[SchemeNorm] = { col_fg1,   col_bg1,   col_bg2   },
+	[SchemeNorm] = { col_fg1,   col_bg1,   col_bg2   },	/* change bg1 to bg2 for better depth */
 	[SchemeItem] = { col_fg1,   col_bg2,   col_bg1   }, 
 	[SchemeSel]  = { col_fg1,   col_bg3,   col_bg3   },
+	[SchemeUrg]  = { col_fg1,   col_bg4,   col_bg4   },
 	[SchemeTL1]  = { col_bg1,   col_tl1,   col_bg1   },
 	[SchemeTL2]  = { col_bg1,   col_tl2,   col_bg1   },
+	[SchemeTL3]  = { col_bg1,   col_tl3,   col_bg1   },
 	[SchemeBR1]  = { col_bg1,   col_br1,   col_bg1   },
 	[SchemeBR2]  = { col_bg1,   col_br2,   col_bg1   },
+	[SchemeBR3]  = { col_bg1,   col_br3,   col_bg1   },
 };
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+static const int urgtag   = 1; /* 0 disable urgent tags */
 
 /* window rule(s) */
 static const Rule rules[] = {
@@ -73,6 +80,7 @@ static const char *monocles[] = { "M" };						/* keep label */
 
 /* title(s) */
 static const char *notitle = { "Desktop" };
+static const int urgtitle  = 1; /* 0 disable urgent titles */
 
 /* key definitions */
 #define MODKEY Mod4Mask
