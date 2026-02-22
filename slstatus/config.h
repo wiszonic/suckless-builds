@@ -18,21 +18,41 @@ static const char micmutcmd[] 	= "wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | awk 
 static const char moncmd[]	= "xrandr --verbose | grep -i brightness | awk '{print $2}'";
 
 /* define output */
+#define DESIGN 1 /* 0 to use old design */
+#if DESIGN
 static const struct arg args[] 	= {
-	/* function 	format          		argument 	turn	signal */
-	{ run_command, 	"^b1^^f6^%s^f6^^s^",           	"echo 'Key'", 	0,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^i1^^o1^",       keycmd, 	1,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^s^",           	"echo 'Vol'", 	0,   	-1 },
-	{ run_command, 	"^b1^^f6^%s%%^f6^^s^",         	volcmd, 	1,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^i1^^o1^",       volmutcmd, 	1,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^s^",           	"echo 'Mic'", 	0,   	-1 },
-	{ run_command, 	"^b1^^f6^%s%%^f6^^s^",         	miccmd, 	1,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^i1^^o1^",       micmutcmd, 	1,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^s^",        	"echo 'Bri'", 	0,   	-1 },
-	{ run_command, 	"^b1^^f6^%s^f6^^i1^^o1^",       moncmd, 	1,   	-1 },
-	{ datetime,	"^b2^^f6^%s^f6^^i2^",		"%H:%M", 	1, 	-1 },
-	{ datetime,	"^b2^^f6^%s^f6^^i3^^o2^",	"%a %d. %b", 	1, 	-1 },
+	/* function 		format          	argument 		turn	signal */
+	/* new design */	
+	{ run_command, 		"%s^s^",           	"echo 'Key'", 		0,   	-1 },
+	{ run_command, 		"%s^i2^",       	keycmd, 		1,   	-1 },
+	{ run_command, 		"%s^s^",           	"echo 'Vol'", 		0,   	-1 },
+	{ run_command, 		"%s%%^s^",         	volcmd, 		1,   	-1 },
+	{ run_command, 		"%s^i2^",       	volmutcmd, 		1,   	-1 },
+	{ run_command, 		"%s^s^",           	"echo 'Mic'", 		0,   	-1 },
+	{ run_command, 		"%s%%^s^",         	miccmd, 		1,   	-1 },
+	{ run_command, 		"%s^i2^",       	micmutcmd, 		1,   	-1 },
+	{ run_command, 		"%s^s^",        	"echo 'Bri'", 		0,   	-1 },
+	{ run_command, 		"%s^i1^^o1^^c2^",       moncmd, 		1,   	-1 },
+	{ datetime,		"%s^i3^",		"%H:%M", 		1, 	-1 },
+	{ datetime,		"%s^i4^^o2^",		"%a %d. %b", 		1, 	-1 },
 };
+#else
+static const struct arg args[] 	= {
+	/* old design */	
+	{ run_command, 		"%s^s^",           	"echo 'Key'", 		0,   	-1 },
+	{ run_command, 		"%s^i1^^o1^^c1^",       keycmd, 		1,   	-1 },
+	{ run_command, 		"%s^s^",           	"echo 'Vol'", 		0,   	-1 },
+	{ run_command, 		"%s%%^s^",         	volcmd, 		1,   	-1 },
+	{ run_command, 		"%s^i1^^o1^^c1^",       volmutcmd, 		1,   	-1 },
+	{ run_command, 		"%s^s^",           	"echo 'Mic'", 		0,   	-1 },
+	{ run_command, 		"%s%%^s^",         	miccmd, 		1,   	-1 },
+	{ run_command, 		"%s^i1^^o1^^c1^",       micmutcmd, 		1,   	-1 },
+	{ run_command, 		"%s^s^",        	"echo 'Bri'", 		0,   	-1 },
+	{ run_command, 		"%s^i1^^o1^^c2^",       moncmd, 		1,   	-1 },
+	{ datetime,		"%s^i3^",		"%H:%M", 		1, 	-1 },
+	{ datetime,		"%s^i4^^o2^",		"%a %d. %b", 		1, 	-1 },
+};
+#endif
 
 /* maximum output string length */
 #define MAXLEN CMDLEN * LEN(args)
