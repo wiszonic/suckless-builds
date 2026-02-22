@@ -727,9 +727,7 @@ dirtomon(int dir)
 }
 
 static void
-drawbevel(Drw *drw, int type, int style,
-		int x, int y, int w, int h, int b,
-		int scmtl, int scmbr) 
+drawbevel(Drw *drw, int type, int style, int x, int y, int w, int h, int b, int scmtl, int scmbr) 
 {
 	unsigned int i;
 
@@ -757,20 +755,24 @@ drawbevel(Drw *drw, int type, int style,
 }
 
 int
-drawstatusbar(Monitor *m, int bh, char* stext) {
+drawstatusbar(Monitor *m, int bh, char* stext)
+{
 	int ret, i, w, x, len,
 		y = tbpx, b = bevelpx,
 		og = outgappx, ig = ingappx,
 		tb = tbgappx, lr = lrgappx;
 
 	int xy = b * 3;
+	int xi = xy - b;
+	int tw = 6;
 	int h = bh - (y * 2);
 	int th = h - (xy * 2) - (tb * 2);
 	int ti = th + (tb * 2);
 	int yi = y + xy;
 	int yh = yi + tb;
-	int wi = (xy * 2) + (lr * 2) + (b * 3);
-	int wh = xy + lr;
+	int wi = xy + lr;
+	int wh = wi + xi + tw;
+	int wx = (xi * 2) + (tw * 2);
 
 	short isCode = 0;
 	char *text;
@@ -792,27 +794,19 @@ drawstatusbar(Monitor *m, int bh, char* stext) {
 				text[i] = '\0';
 				w += TEXTW(text) - lrpad;
 				text[i] = '^';
-				if (text[++i] == 'f') {
-					w += atoi(text + ++i);
-				} else if (text[i] == 'o') {
+				w += atoi(text + ++i);
+				if (text[i] == 'o')
+					w += (wh * 2) + b;
+				else if (text[i] == 'i') {
 					i++;
-					if (text[i] == '1') {
-						w += wi + og + b;
-					} else if (text[i] == '2') {
-						w += wi;
-					}
-				} else if (text[i] == 'i') {
-					i++;
-					if (text[i] == '1') {
-						w += 0;
-					} else if (text[i] == '2') {
-						w += (b * 3) + ig + b;
-					} else if (text[i] == '3') {
-						w += 0;
-					}
-				} else if (text[i] == 's') {
-					w += b * 2;
-				}
+					if (text[i] == '2')
+						w += wx + b + og;
+					else if (text[i] == '3')
+						w += wx + b + ig;
+				} else if (text[i] == 's')
+					w += xi + (tw * 2);
+				else if (text[i] == 'c')
+					w += og;
 			} else {
 				isCode = 0;
 				text = text + i + 1;
@@ -826,11 +820,11 @@ drawstatusbar(Monitor *m, int bh, char* stext) {
 		isCode = 0;
 	text = p;
 
-	w += og + lrpx + b; /* adjustable padding on both sides */
+	w += og + lrpx;
 	ret = x = m->ww - w;
 
 	drw_setscheme(drw, scheme[SchemeItem]);
-	drw_rect(drw, x + og + xy, yi, w - og - xy - lrpx, ti, 1, 1);
+	drw_rect(drw, x + og, yi, w - og - lrpx, ti, 1, 1);
 	x += og;
 
 	/* process status text */
@@ -840,70 +834,64 @@ drawstatusbar(Monitor *m, int bh, char* stext) {
 	while (text[++i]) {
 		if (text[i] == '^' && !isCode) {
 			isCode = 1;
-
 			text[i] = '\0';
+
 			w = TEXTW(text) - lrpad;
-			drw_text(drw, x + wh + (b * 2), yh, w, th, 0, text, 0);
+			drw_text(drw, x + wh, yh, w, th, 0, text, 0);
 
 			x += w;
 
 			/* process code */
 			while (text[++i] != '^') {
-				if (text[i] == 'f') {
-					x += atoi(text + ++i);
-				} else if (text[i] == 'o') {
+				if (text[i] == 'o') {
 					i++;
-					int ow = x - ox + wi;
-					if (text[i] == '1') {
-						drawbevel(drw, 3, 0, ox, y, ow, h, b,
-							SchemeBR1, SchemeTL1);
-						drw_setscheme(drw, scheme[SchemeNorm]);
-						drw_rect(drw, ox + ow + b, yi, og, ti, 1, 1);
-						x += wi + og + b;
-					} else if (text[i] == '2') {
-						drawbevel(drw, 3, 1, ox, y, ow, h, b,
-							SchemeTL1, SchemeBR1);					
-					}
+					int ow = x - ox + (wh * 2);
+					if (text[i] == '1')
+						drawbevel(drw, 3, 0, ox, y, ow, h, b, SchemeBR1, SchemeTL1);
+					else if (text[i] == '2')
+						drawbevel(drw, 3, 1, ox, y, ow, h, b, SchemeTL1, SchemeBR1);					
+					x += (wh * 2) + b;
 					ox = x;
 					ix = ox;
 				} else if (text[i] == 'i') {
 					i++;
-					int iw = x - ix + (b * 3);
-					if (text[i] == '1') {
-						drawbevel(drw, 2, 0, ix + wh, yh, iw, th, b,
-							SchemeTL1, SchemeBR1);					
-					} else if (text[i] == '2') {
-						drawbevel(drw, 2, 0, ix + wh, yh, iw, th, b,
-							SchemeBR2, SchemeTL2);					
-						drw_setscheme(drw, scheme[SchemeSel]);
-						drw_rect(drw, ix + wh + (b * 2), yh + (b * 2),
-							lr + (b * 2), th - (b * 4), 1, 1);
-						drw_rect(drw, ix + iw - lr + (b * 4), yh + (b * 2),
-							lr + (b * 2), th - (b * 4), 1, 1);
-						x += (b * 3) + ig + b;
+					int iw = x - ix + wx;
+					if (text[i] == '1')
+						drawbevel(drw, 2, 0, ix + wi, yh, iw, th, b, SchemeTL1, SchemeBR1);
+					else if (text[i] == '2') {
+						drawbevel(drw, 2, 0, ix + wi, yh, iw, th, b, SchemeTL1, SchemeBR1);
+						x += wx + b + og;
+						drw_setscheme(drw, scheme[SchemeItem]);
 					} else if (text[i] == '3') {
-						drawbevel(drw, 2, 0, ix + wh, yh, iw, th, b,
-							SchemeTL2, SchemeBR2);					
+						drw_rect(drw, ix + wi, yh, xi + tw, th, 1, 1);
+						drw_rect(drw, ix + wi + iw - xi - tw, yh, tw + b, th, 1, 1);
+						drawbevel(drw, 2, 0, ix + wi, yh, iw, th, b, SchemeBR2, SchemeTL2);
 						drw_setscheme(drw, scheme[SchemeSel]);
-						drw_rect(drw, ix + wh + (b * 2), yh + (b * 2),
-							lr + (b * 2), th - (b * 4), 1, 1);
-						drw_rect(drw, ix + iw - lr + (b * 4), yh + (b * 2),
-							lr + (b * 2), th - (b * 4), 1, 1);
+						x += wx + b + ig;
+					} else if (text[i] == '4') {
+						drw_rect(drw, ix + wi, yh, xi + tw, th, 1, 1);
+						drw_rect(drw, ix + wi + iw - xi - tw, yh, tw + b, th, 1, 1);
+						drawbevel(drw, 2, 0, ix + wi, yh, iw, th, b, SchemeTL2, SchemeBR2);
 					}
 					ix = x;
 				} else if (text[i] == 's') {
 					drw_setscheme(drw, scheme[SchemeBR1]);
-					drw_rect(drw, x + wh + (b * 2), yh, b, th, 1, 1);
+					drw_rect(drw, x + wi + xi + (tw * 2), yh, b, th, 1, 1);
 					drw_setscheme(drw, scheme[SchemeTL1]);
-					drw_rect(drw, x + wh + xy, yh, b, th, 1, 1);
-					x += b * 2;
-				} else if (text[i] == 'b') {
+					drw_rect(drw, x + wi + xi + (tw * 2) + b, yh, b, th, 1, 1);
+					x += xi + (tw * 2);
+					drw_setscheme(drw, scheme[SchemeItem]);
+				} else if (text[i] == 'c') {
+					drw_setscheme(drw, scheme[SchemeNorm]);
+					drw_rect(drw, x, yi, og, ti, 1, 1);
+					x += og;
+					ox = x;
+					ix = ox;
 					i++;
-					if (text[i] == '1') {
+					if (text[i] == '1')
 						drw_setscheme(drw, scheme[SchemeItem]);
-					} else if (text[i] == '2') {
+					else if (text[i] == '2')
 						drw_setscheme(drw, scheme[SchemeSel]);
-					}
 				}
 			}
 
